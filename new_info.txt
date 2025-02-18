@@ -1,0 +1,12 @@
+Click Events
+
+'''
+if event.type == pygame.MOUSEBUTTONDOWN:
+    print(event.button)
+'''
+
+1 - left click
+2 - middle click
+3 - right click
+4 - scroll up
+5 - scroll down

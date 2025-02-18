@@ -1,0 +1,25 @@
+Making a Sudoku Puzzle Game
+Goal:
+1. Make the title screen (Status: Completed)
+2. Create a level selection (Status: In Progress)
+3. Draw the sudoku board (9x9 grid) (Status: In Progress)
+4. isValid (Status: Planned)
+5. isSolved (Status: Planned)
+6. Recursive Backtracking to computationally solve the Sudoku puzzle (Status: Planned)
+7. Convert to exe (Status: Planned)
+
+// HW #1: Sudoku #1 (Board Setup)
+// HW #2: Sudoku #2 (isValid, isSolved)
+// This program will be used to play sudoku.
+// isValid & isSolved are the methods used to check if the sudoku is a valid puzzle and if the sudoku has been fully solved respectively
+// HW #3: Sudoku #3 (solve section)
+// Using recursive backtracking to solve a Sudoku puzzle
+
+
+
+Programming Tips (from ChatGPT):
+Summary:
+Make it work first: Get a playable prototype.
+Make it fun: Refine gameplay and user experience.
+Make it efficient: Optimize based on real performance issues and profiling.
+Focus on creating a solid game experience, then make it run as smoothly as possible. Let me know if you need tips for specific stages! 
