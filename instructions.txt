@@ -1,12 +1,11 @@
 Making a Sudoku Puzzle Game
 Goal:
 1. Make the title screen (Status: Completed)
-2. Create a level selection (Status: In Progress)
-3. Draw the sudoku board (9x9 grid) (Status: In Progress)
-4. isValid (Status: Planned)
-5. isSolved (Status: Planned)
-6. Recursive Backtracking to computationally solve the Sudoku puzzle (Status: Planned)
-7. Convert to exe (Status: Planned)
+2. Create a level selection (Status: Completed)
+3. Draw the sudoku board (9x9 grid) (Status: Completed)
+4. isSolved (Status: In Progress)
+5. Recursive Backtracking to computationally solve the Sudoku puzzle (Status: Planned)
+6. Convert to exe (Status: Planned)
 
 // HW #1: Sudoku #1 (Board Setup)
 // HW #2: Sudoku #2 (isValid, isSolved)

@@ -56,8 +56,11 @@ class ImageButton(Image):
     def __init__(self, img_name):
         super().__init__(img_name)
     
-    def expand(self):
-        self.resized_image = pygame.transform.scale(self.loaded_image, (int(self.img_width * 1.5), int(self.img_height * 1.5)))
+    def expand(self, scale_factor):
+        self.resized_image = pygame.transform.scale(self.loaded_image, (int(self.img_width * scale_factor), int(self.img_height * scale_factor)))
+    
+    def change_image(self, new_img_path):
+        self.image_path = self.path + new_img_path
     
 class MovingImage(Image):
     def __init__(self, img_name, type):

@@ -7,6 +7,7 @@ from text import Text, MovingText
 from image import Image, MovingImage, ImageButton
 from NumInput import NumInput
 from sudoku_func import SudokuFunctions
+from music import Music
 
 pygame.init()  
 
@@ -21,18 +22,18 @@ FRAMES_PER_SECOND = 60
 
 ##### FUNCTIONS FOR GAME LOOP #####
 
-def expand_button(button, mouse, rect, og_rect, og_width, og_height):
+def expand_button(button, mouse, rect, og_rect, og_width, og_height, scale_factor):
     if button.get_rect(button.x_position, button.y_position).collidepoint(mouse):
-            button.expand()
+            button.expand(scale_factor)
             
-            delta_width = int(og_width * 1.5) - rect.width
-            delta_height = int(og_height * 1.5) - rect.height
+            delta_width = int(float(og_width) * scale_factor) - rect.width
+            delta_height = int(float(og_height) * scale_factor) - rect.height
 
             rect.x -= delta_width // 2
             rect.y -= delta_height // 2
 
-            rect.width = int(og_width * 1.5)
-            rect.height = int(og_height * 1.5)
+            rect.width = int(float(og_width) * scale_factor)
+            rect.height = int(float(og_height) * scale_factor)
     else:
         button.resize_image(og_width, og_height)
         rect = og_rect
@@ -63,7 +64,12 @@ def emptied_board(digits_matrix):
         for digit in row:
             digit.changeable = True
             digit.change_text(str(0), (0, 0, 0))
-        
+
+def display_time():
+    current_time = int(pygame.time.get_ticks()/1000) - start_time
+    time_surf = Text('Time: ' + str(current_time) + ' s', 'Pixeltype.ttf', (0, 0, 0), 50, 104, 60, 255, False)
+    time_surf.display(background.screen)
+    return current_time
 
 '''
 digit_x_pos = 42 + int(GRID_SQUARE_SIZE) / 2
@@ -178,6 +184,8 @@ for row in digits_matrix:
 current_row = 1
 current_column = 1   
 
+sudoku_functions = SudokuFunctions(digits_matrix)
+
 # Variables for Settings Tab
 
 settings_active = False
@@ -188,6 +196,63 @@ settings_tab_rect = settings_tab.get_rect(400, 310)
 cross_button = ImageButton("sprites/cross.png")
 cross_button_rect = cross_button.get_rect(575, 168)
 
+check_boxes = []
+check_boxes_rects = []
+ticks = []
+ticks_rects = []
+
+check_boxes.append(Image("sprites/checkbox.png"))
+check_boxes_rects.append(check_boxes[0].get_rect(565, 210))
+ticks.append(Image("sprites/tick.png"))
+ticks_rects.append(ticks[0].get_rect(575, 208))
+
+check_boxes.append(Image("sprites/checkbox.png"))
+check_boxes_rects.append(check_boxes[1].get_rect(565, 250))
+ticks.append(Image("sprites/tick.png"))
+ticks_rects.append(ticks[1].get_rect(575, 248))
+
+background_music_played = True
+background_transitions_shown = True
+background_music_played_temp = True
+background_transitions_shown_temp = True
+
+apply_settings_default_img = Image("sprites/apply_settings_default.png")
+apply_settings_default_rect = apply_settings_default_img.get_rect(502, 393)
+
+apply_settings_changes_img = Image("sprites/apply_settings_changes.png")
+apply_settings_changes_rect = apply_settings_changes_img.get_rect(502, 393)
+
+settings_changes = False
+
+apply_changes_text = Text('Apply', 'edosz.ttf', (255, 255, 255), 30, 502, 373, 255, True)
+apply_changes_text_2 = Text('Changes', 'edosz.ttf', (255, 255, 255), 30, 502, 405, 255, True)
+
+# Buttons and Other Variables During the Game Session
+
+restart_level_img = ImageButton("sprites/restart_button.png")
+restart_level_rect = restart_level_img.get_rect(620, 128)
+
+validate_button_img = ImageButton("sprites/validate_button.png")
+validate_button_rect = validate_button_img.get_rect(620, 228)
+
+solution_button_img = ImageButton("sprites/solution_button.png")
+solution_button_rect = solution_button_img.get_rect(620, 328)
+
+exit_button_img = ImageButton("sprites/exit_button.png")
+exit_button_rect = exit_button_img.get_rect(620, 522)
+
+start_time = 0
+elapsed_time = 0
+
+current_level = 0
+
+bg_music = Music("beneath_the_mask")
+bg_music.setVolume()
+music_channel = None
+
+bg_music2 = Music("alleycat")
+bg_music2.setVolume()
+music_channel2 = None
 '''
 Main Tab
 Width: 400 px
@@ -235,7 +300,7 @@ while True:
                 game_title.fading = True
                 sudoku_img.fading = True
                 select_level_title.fading = True
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 :
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if settings_img_rect.collidepoint(event.pos) and settings_active is False:
                     settings_active = True
                     button_disabled = True
@@ -246,12 +311,31 @@ while True:
                     for i in range(0, 9):
                         if level_buttons_rects[i].collidepoint(event.pos): 
                             sudoku_puzzle_title.change_text("Puzzle #" + str(i + 1), (0, 0, 0))
+                            current_level = i + 1
                             level_select_active = False
                             game_active = True
                             updated_board(i + 1, digits_matrix)
+                            start_time = int(pygame.time.get_ticks() / 1000)
                 if cross_button_rect.collidepoint(event.pos) and settings_active is True:
                     settings_active = False
                     button_disabled = False
+                if check_boxes_rects[0].collidepoint(event.pos) and settings_active is True:
+                    if background_music_played:
+                        background_music_played = False
+                    else:
+                        background_music_played = True
+                    settings_changes = True
+                if check_boxes_rects[1].collidepoint(event.pos) and settings_active is True:
+                    if background_transitions_shown:
+                        background_transitions_shown = False
+                    else:
+                        background_transitions_shown = True
+                    settings_changes = True
+                if apply_settings_changes_rect.collidepoint(event.pos) and settings_active is True:
+                    print("Settings has been Saved")
+                    settings_active = False
+                    button_disabled = False
+                    pass
             
         elif game_active is True:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_0:
@@ -285,17 +369,50 @@ while True:
                     digits_matrix[current_row - 1][current_column - 1].change_text(str(chr(event.key)), (255, 0, 0))
                 if pygame.K_BACKSPACE == event.key and digits_matrix[current_row - 1][current_column - 1].changeable:
                     digits_matrix[current_row - 1][current_column - 1].change_text("", (255, 0, 0))
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if restart_level_rect.collidepoint(event.pos):
+                    updated_board(current_level, digits_matrix)
+                    white_square.reset_position(background.screen)
+                    current_row = 1
+                    current_column = 1
+                
+                if validate_button_rect.collidepoint(event.pos):
+                    pass
+
+                if solution_button_rect.collidepoint(event.pos):
+                    pass
+
+                if exit_button_rect.collidepoint(event.pos):
+                    game_active = False
+                    level_select_active = True
+                    emptied_board(digits_matrix)
+                    white_square.reset_position(background.screen)
+                    current_row = 1
+                    current_column = 1
     
     mouse = pygame.mouse.get_pos()
     background.render()
     
     if game_active is True:
-        background.levelselect_to_sudokuboard()
+        #if background_music_played and bg_music.music_started is False:
+        if background_music_played:
+            if current_level >= 1 and current_level <= 5 and bg_music.music_started is False:
+                music_channel = bg_music.track.play(loops=-1)
+                bg_music.music_started = True
+            elif current_level >= 6 and current_level <= 9 and bg_music2.music_started is False:
+                music_channel2 = bg_music2.track.play(loops=-1)
+                bg_music2.music_started = True
+
+        if background_transitions_shown:
+            background.levelselect_to_sudokuboard()
         
         initial_x_pos = 40
         initial_y_pos = 100
+        current_time = display_time()
         sudoku_puzzle_title.display(background.screen)
         white_square.display(background.screen)
+        
         for row in digits_matrix:
             for digit in row:
                 digit.display(background.screen)
@@ -305,12 +422,29 @@ while True:
             pygame.draw.line(background.screen, (0, 0, 0), [40, initial_y_pos], [40 + int(9 * GRID_SQUARE_SIZE), initial_y_pos], 5) # Draws a horizontal line
             initial_x_pos += GRID_SQUARE_SIZE
             initial_y_pos += GRID_SQUARE_SIZE
+
+        expand_button(restart_level_img, mouse, restart_level_rect, restart_level_rect, 200, 60, 1.2)
+        expand_button(validate_button_img, mouse, validate_button_rect, validate_button_rect, 200, 60, 1.2)
+        expand_button(solution_button_img, mouse, solution_button_rect, solution_button_rect, 200, 60, 1.2)
+        expand_button(exit_button_img, mouse, exit_button_rect, exit_button_rect, 200, 60, 1.2)
         
         #settings_img.display(background.screen)
+
+        restart_level_img.display(background.screen)
+        validate_button_img.display(background.screen)
+        solution_button_img.display(background.screen)
+        exit_button_img.display(background.screen)
+
+    elif level_select_active is True:  
         
-
-    elif level_select_active is True:   
-
+        if music_channel is not None:
+            music_channel.stop()
+            bg_music.music_started = False
+        
+        if music_channel2 is not None:
+            music_channel2.stop()
+            bg_music2.music_started = False
+        
         background.intro_to_levelselect()
         
         if select_level_title.fading is True:
@@ -339,14 +473,38 @@ while True:
 
         for i in range(0, 9):
             level_buttons[i].display(background.screen)
-            expand_button(level_buttons[i], mouse, level_buttons_rects[i], level_buttons_rects[i], 50, 50)
+            expand_button(level_buttons[i], mouse, level_buttons_rects[i], level_buttons_rects[i], 50, 50, 1.5)
         
-        expand_button(settings_img, mouse, settings_img_rect, settings_img_rect, 50, 50)
-        expand_button(cross_button, mouse, cross_button_rect, cross_button_rect, 24, 24)
+        expand_button(settings_img, mouse, settings_img_rect, settings_img_rect, 50, 50, 1.5)
+        expand_button(cross_button, mouse, cross_button_rect, cross_button_rect, 24, 24, 1.5)
         
         if settings_active:
             settings_tab.display(background.screen)
             cross_button.display(background.screen)
+            check_boxes[0].display(background.screen)
+            check_boxes[1].display(background.screen)
+
+            if background_music_played and settings_active is True:
+                ticks[0].display(background.screen)
+                
+            if background_transitions_shown and settings_active is True:
+                ticks[1].display(background.screen)
+            if settings_changes:
+                apply_settings_changes_img.display(background.screen)
+                apply_changes_text.change_text("Apply", (0, 0, 0))
+                apply_changes_text_2.change_text("Changes", (0, 0, 0))
+                no_of_changes += 1
+            else: 
+                apply_settings_default_img.display(background.screen)
+                apply_changes_text.change_text("Apply", (255, 255, 255))
+                apply_changes_text_2.change_text("Changes", (255, 255, 255))
+                no_of_changes -= 1
+            
+            apply_changes_text.display(background.screen)
+            apply_changes_text_2.display(background.screen)
+        else:
+            settings_changes = False
+            no_of_changes = 0
 
     elif title_active is True: 
         # Displaying the title screen
