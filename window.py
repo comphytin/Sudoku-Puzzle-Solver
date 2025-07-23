@@ -6,7 +6,7 @@ from background import Background
 from text import Text, MovingText
 from image import Image, MovingImage, ImageButton
 from NumInput import NumInput
-from sudoku_func import SudokuFunctions
+from sudoku_functions import SudokuFunctions
 from music import Music
 
 pygame.init()  
@@ -65,7 +65,7 @@ def emptied_board(digits_matrix):
             digit.changeable = True
             digit.change_text(str(0), (0, 0, 0))
 
-def display_time():
+def display_time(start_time):
     current_time = int(pygame.time.get_ticks()/1000) - start_time
     time_surf = Text('Time: ' + str(current_time) + ' s', 'Pixeltype.ttf', (0, 0, 0), 50, 104, 60, 255, False)
     time_surf.display(background.screen)
@@ -92,10 +92,13 @@ pygame.display.set_mode((infoObject.current_w, infoObject.current_h))
 '''
     
 screen = pygame.display.set_mode((GAME_WIDTH, GAME_HEIGHT), flags=pygame.SCALED, vsync=1)
-pygame.display.set_caption('Sudoku Puzzle')
+pygame.display.set_caption('9 Sudoku Puzzles')
 clock = pygame.time.Clock()
 test_font = pygame.font.Font('font/edosz.ttf', 50)
 default_color = (255, 255, 255)
+
+sudoku_icon_img = Image("sprites/sudoku_app_icon.png")
+pygame.display.set_icon(sudoku_icon_img.loaded_image)
 
 # Variables for Intro Screen
 
@@ -103,7 +106,7 @@ sudoku_img = MovingImage("sudokuboardimg.jpeg", "title_decoration")
 sudoku_img_rect = sudoku_img.get_rect(170, 230)
 sudoku_img.resize_image(210, 210)
 
-game_title = Text('Sudoku Game ', 'edosz.ttf', (0, 0, 0), 50, 400, 80, 255, True)
+game_title = Text('9 Sudoku Puzzles ', 'edosz.ttf', (0, 0, 0), 50, 410, 80, 255, True)
 press_to_play = Text(' Press c to Play ', 'edosz.ttf', (0, 0, 255), 50, 400, 400, 255, True)
 press_to_quit = Text(' Press q to Exit ', 'edosz.ttf', (255, 0, 0), 50, 400, 470, 255, True)
 
@@ -117,10 +120,10 @@ c_pressed = False
 q_pressed = False
 
 ################################### TEMPORARY CODE ###################################
-print("Image Width: " + str(sudoku_img.img_width) + " Image Height: " + str(sudoku_img.img_height))
+#print("Image Width: " + str(sudoku_img.img_width) + " Image Height: " + str(sudoku_img.img_height))
 infoObject = pygame.display.Info()
-print("Screen Width: " + str(infoObject.current_w) + "px")
-print("Screen Height: " + str(infoObject.current_h) + "px")
+#print("Screen Width: " + str(infoObject.current_w) + "px")
+#print("Screen Height: " + str(infoObject.current_h) + "px")
 ################################### TEMPORARY CODE ###################################
 
 # Variables for Level Selection
@@ -246,6 +249,9 @@ elapsed_time = 0
 
 current_level = 0
 
+#bg_music_list = [Music("beneath_the_mask"), Music("alleycat")]
+#music_channels = [None, None]
+
 bg_music = Music("beneath_the_mask")
 bg_music.setVolume()
 music_channel = None
@@ -253,6 +259,26 @@ music_channel = None
 bg_music2 = Music("alleycat")
 bg_music2.setVolume()
 music_channel2 = None
+
+correct_txt = Text('Correct!!', 'Pixeltype.ttf', (255, 255, 255), 50, 115, 580, 255, False)
+invalid_txt = Text('Invalid Solution!!', 'Pixeltype.ttf', (255, 255, 255), 50, 160, 580, 255, False)
+
+is_correct = False
+is_inValid = False
+
+loading_sol_txt = Text('Solution', 'Pixeltype.ttf', (0, 0, 255), 50, 115, 580, 255, False)
+loading_solution = False
+
+you_solved_it = Image("sprites/you_solve_it_display.png")
+you_solved_it_rect = you_solved_it.get_rect(400, 310)
+
+cross_button_2 = ImageButton("sprites/cross.png")
+cross_button_2_rect = cross_button_2.get_rect(575, 168)
+
+happy_mc_ride = Image("happy_mc_ride.png")
+happy_mc_ride_rect = happy_mc_ride.get_rect(400, 335)
+happy_mc_ride.resize_image(323, 220)
+
 '''
 Main Tab
 Width: 400 px
@@ -262,7 +288,12 @@ X button to close tab
 Width: 24 px
 Height: 24 px
 '''
+
 settings_active = False
+
+move_rect = False
+
+solved_offsets = [[0, 0], [0, 0], [0, 0]]
 
 while True:
 
@@ -332,21 +363,21 @@ while True:
                         background_transitions_shown = True
                     settings_changes = True
                 if apply_settings_changes_rect.collidepoint(event.pos) and settings_active is True:
-                    print("Settings has been Saved")
                     settings_active = False
                     button_disabled = False
-                    pass
+                    
             
         elif game_active is True:
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_0:
-                print("0")
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_q:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_q:
                 game_active = False
                 level_select_active = True
                 emptied_board(digits_matrix)
                 white_square.reset_position(background.screen)
                 current_row = 1
                 current_column = 1
+                loading_solution = False
+                is_correct = False
+                is_inValid = False
             if event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT and white_square.x > 40:
                 white_square.x -= GRID_SQUARE_SIZE
                 current_column -= 1
@@ -371,25 +402,54 @@ while True:
                     digits_matrix[current_row - 1][current_column - 1].change_text("", (255, 0, 0))
 
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if restart_level_rect.collidepoint(event.pos):
-                    updated_board(current_level, digits_matrix)
-                    white_square.reset_position(background.screen)
-                    current_row = 1
-                    current_column = 1
-                
-                if validate_button_rect.collidepoint(event.pos):
-                    pass
+                if button_disabled is False:
+                    if restart_level_rect.collidepoint(event.pos):
+                        updated_board(current_level, digits_matrix)
+                        white_square.reset_position(background.screen)
+                        start_time = int(pygame.time.get_ticks() / 1000)
+                        current_row = 1
+                        current_column = 1
+                        is_correct = False
+                        is_inValid = False
+                        loading_solution = False
+                    
+                    if validate_button_rect.collidepoint(event.pos):
+                        test_board = SudokuFunctions(digits_matrix)
+                        if test_board.isSolved():
+                            is_correct = True
+                            is_inValid = False
+                            loading_solution = False
+                            button_disabled = True
+                        else:
+                            is_correct = False
+                            is_inValid = True
+                            loading_solution = False
 
-                if solution_button_rect.collidepoint(event.pos):
-                    pass
+                        
 
-                if exit_button_rect.collidepoint(event.pos):
-                    game_active = False
-                    level_select_active = True
-                    emptied_board(digits_matrix)
-                    white_square.reset_position(background.screen)
-                    current_row = 1
-                    current_column = 1
+                    if solution_button_rect.collidepoint(event.pos):
+                        updated_board(current_level, digits_matrix)
+                        white_square.reset_position(background.screen)
+                        test_board = SudokuFunctions(digits_matrix)
+                        loading_solution = True
+                        is_correct = False
+                        is_inValid = False
+                        test_board.solve()
+
+                    if exit_button_rect.collidepoint(event.pos):
+                        game_active = False
+                        level_select_active = True
+                        emptied_board(digits_matrix)
+                        white_square.reset_position(background.screen)
+                        current_row = 1
+                        current_column = 1
+                        is_correct = False
+                        is_inValid = False
+                        loading_solution = False
+
+                if is_correct and cross_button_2_rect.collidepoint(event.pos):
+                    is_correct = False
+                    button_disabled = False
     
     mouse = pygame.mouse.get_pos()
     background.render()
@@ -409,7 +469,7 @@ while True:
         
         initial_x_pos = 40
         initial_y_pos = 100
-        current_time = display_time()
+        current_time = display_time(start_time)
         sudoku_puzzle_title.display(background.screen)
         white_square.display(background.screen)
         
@@ -422,18 +482,32 @@ while True:
             pygame.draw.line(background.screen, (0, 0, 0), [40, initial_y_pos], [40 + int(9 * GRID_SQUARE_SIZE), initial_y_pos], 5) # Draws a horizontal line
             initial_x_pos += GRID_SQUARE_SIZE
             initial_y_pos += GRID_SQUARE_SIZE
-
-        expand_button(restart_level_img, mouse, restart_level_rect, restart_level_rect, 200, 60, 1.2)
-        expand_button(validate_button_img, mouse, validate_button_rect, validate_button_rect, 200, 60, 1.2)
-        expand_button(solution_button_img, mouse, solution_button_rect, solution_button_rect, 200, 60, 1.2)
-        expand_button(exit_button_img, mouse, exit_button_rect, exit_button_rect, 200, 60, 1.2)
         
-        #settings_img.display(background.screen)
+        if button_disabled is False:
+
+            expand_button(restart_level_img, mouse, restart_level_rect, restart_level_rect, 200, 60, 1.2)
+            expand_button(validate_button_img, mouse, validate_button_rect, validate_button_rect, 200, 60, 1.2)
+            expand_button(solution_button_img, mouse, solution_button_rect, solution_button_rect, 200, 60, 1.2)
+            expand_button(exit_button_img, mouse, exit_button_rect, exit_button_rect, 200, 60, 1.2)
+
+        expand_button(cross_button_2, mouse, cross_button_2_rect, cross_button_2_rect, 24, 24, 1.5)
 
         restart_level_img.display(background.screen)
         validate_button_img.display(background.screen)
         solution_button_img.display(background.screen)
         exit_button_img.display(background.screen)
+
+        if is_correct:
+            correct_txt.display(background.screen)
+            you_solved_it.display(background.screen)
+            cross_button_2.display(background.screen)
+            happy_mc_ride.display(background.screen)
+        
+        if is_inValid:
+            invalid_txt.display(background.screen)
+        
+        if loading_solution is True:
+            loading_sol_txt.display(background.screen)
 
     elif level_select_active is True:  
         

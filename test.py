@@ -1,62 +1,46 @@
-# Initialize Pygame
 import pygame
+import sys
+
 pygame.init()
-
-# Screen dimensions
-WIDTH, HEIGHT = 800, 600
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Text Opacity")
-
-# Font and text
-font = pygame.font.Font(None, 74)  # Default font with size 74
-text = font.render("Hello, Pygame!", True, (255, 255, 255))  # Rendered text in white
-text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))  # Center the text
-
-# Create a surface for the text
-text_surface = pygame.Surface(text.get_size(), pygame.SRCALPHA)  # Support transparency
-text_surface.blit(text, (0, 0))  # Draw the text onto the surface
-
-# Initial opacity
-opacity = 255
-
-# Clock for frame rate
+screen = pygame.display.set_mode((800, 600))
+pygame.display.set_caption("Drag and Drop Example")
 clock = pygame.time.Clock()
 
-fade_speed = 2
-fade_out = True
+# Define a rectangle (x, y, width, height)
+rect = pygame.Rect(300, 200, 150, 100)
+rect_color = (0, 128, 255)
 
-running = True
-while running:
+dragging = False
+offset_x = 0
+offset_y = 0
+
+while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP:  # Increase opacity
-                opacity = min(opacity + 10, 255)
-            elif event.key == pygame.K_DOWN:  # Decrease opacity
-                opacity = max(opacity - 10, 0)
+            pygame.quit()
+            sys.exit()
 
-    # Set the opacity of the text surface
-    text_surface.set_alpha(opacity)
+        # Mouse button down
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if rect.collidepoint(event.pos):  # Check if click inside rect
+                dragging = True
+                # Calculate offset between rect corner and mouse click position
+                mouse_x, mouse_y = event.pos
+                offset_x = rect.x - mouse_x
+                offset_y = rect.y - mouse_y
 
-    # Fill the screen with a background color
-    screen.fill((30, 30, 30))
+        # Mouse button up
+        elif event.type == pygame.MOUSEBUTTONUP:
+            dragging = False
 
-    # Inside the main loop
-    if fade_out:
-        opacity -= fade_speed
-        if opacity <= 0:
-            fade_out = False
-    else:
-        opacity += fade_speed
-        if opacity >= 255:
-            fade_out = True
+        # Mouse movement
+        elif event.type == pygame.MOUSEMOTION:
+            if dragging:
+                mouse_x, mouse_y = event.pos
+                rect.x = mouse_x + offset_x
+                rect.y = mouse_y + offset_y
 
-    # Blit the text surface onto the screen
-    screen.blit(text_surface, text_rect.topleft)
-
-    # Update the display
+    screen.fill((30, 30, 30))  # Background color
+    pygame.draw.rect(screen, rect_color, rect)  # Draw the draggable rect
     pygame.display.flip()
-    clock.tick(60)  # Limit to 60 FPS
-
-pygame.quit()
+    clock.tick(60)
